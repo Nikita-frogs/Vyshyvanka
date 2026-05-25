@@ -14,7 +14,7 @@ public class Main {
     }
 
     public static JFrame frame = new JFrame("Vyshyvanka Editor");
-    public static EmbroideryCanvas canvas = new EmbroideryCanvas(30, 30, 28);
+    public static EmbroideryCanvas canvas = new EmbroideryCanvas(30, 30, 14);
 
     protected static void createWindow() {
 
@@ -34,6 +34,18 @@ public class Main {
             button.addActionListener(event -> canvas.setSelectedColor(color));
             palette.add(button);
         }
+
+        JButton mirrorXButton = new JButton("Mirror X");
+        mirrorXButton.addActionListener(event -> canvas.mirrorX());
+        palette.add(mirrorXButton);
+
+        JButton mirrorYButton = new JButton("Mirror Y");
+        mirrorYButton.addActionListener(event -> canvas.mirrorY());
+        palette.add(mirrorYButton);
+
+        JButton mirrorXYButton = new JButton("Mirror XY");
+        mirrorXYButton.addActionListener(event -> canvas.mirrorXY());
+        palette.add(mirrorXYButton);
 
         frame.setLayout(new BorderLayout());
         frame.add(palette, BorderLayout.NORTH);
