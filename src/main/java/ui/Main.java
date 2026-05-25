@@ -1,5 +1,8 @@
 package ui;
 
+import serialization.EmbroideryPattern;
+import serialization.PatternSerializer;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -10,6 +13,8 @@ import javax.imageio.ImageIO;
 import javax.swing.*;
 
 public class Main {
+    private static final PatternSerializer patternSerializer = new PatternSerializer();
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Main::createWindow);
     }
@@ -52,13 +57,36 @@ public class Main {
             }
         });
 
-        JButton importPngButton = new JButton("Import JSON");
-        exportPngButton.addActionListener(event -> {
+        JButton exportJsonButton = new JButton("Export JSON");
+        exportJsonButton.addActionListener(event -> {
+            JFileChooser chooser = new JFileChooser();
 
+            if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+                try {
+                    patternSerializer.save(canvas.toPattern(), chooser.getSelectedFile().toPath());
+                } catch (IOException | IllegalArgumentException exception) {
+                    JOptionPane.showMessageDialog(frame, "Could not export JSON.");
+                }
+            }
+        });
+
+        JButton importJsonButton = new JButton("Import JSON");
+        importJsonButton.addActionListener(event -> {
+            JFileChooser chooser = new JFileChooser();
+
+            if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+                try {
+                    EmbroideryPattern pattern = patternSerializer.load(chooser.getSelectedFile().toPath());
+                    replaceCanvas(pattern);
+                } catch (IOException | IllegalArgumentException exception) {
+                    JOptionPane.showMessageDialog(frame, "Could not import JSON.");
+                }
+            }
         });
 
         palette.add(exportPngButton);
-        palette.add(importPngButton);
+        palette.add(exportJsonButton);
+        palette.add(importJsonButton);
 
         JButton mirrorXButton = new JButton("Mirror X");
         mirrorXButton.addActionListener(event -> canvas.mirrorX());
@@ -79,5 +107,15 @@ public class Main {
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+    }
+
+    private static void replaceCanvas(EmbroideryPattern pattern) {
+        frame.remove(canvas);
+        canvas = new EmbroideryCanvas(pattern.columns(), pattern.rows(), canvas.cellSize);
+        canvas.loadPattern(pattern);
+        frame.add(canvas, BorderLayout.CENTER);
+        frame.pack();
+        frame.revalidate();
+        frame.repaint();
     }
 }

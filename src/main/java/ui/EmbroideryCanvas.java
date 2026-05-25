@@ -1,5 +1,7 @@
 package ui;
 
+import serialization.EmbroideryPattern;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -37,6 +39,32 @@ class EmbroideryCanvas extends JPanel {
 
     void setSelectedColor(Color selectedColor) {
         this.selectedColor = selectedColor;
+    }
+
+    EmbroideryPattern toPattern() {
+        String[][] colors = new String[cells.length][cells[0].length];
+
+        for (int row = 0; row < cells.length; row++) {
+            for (int column = 0; column < cells[row].length; column++) {
+                colors[row][column] = toHex(cells[row][column]);
+            }
+        }
+
+        return new EmbroideryPattern(1, cells.length, cells[0].length, colors);
+    }
+
+    void loadPattern(EmbroideryPattern pattern) {
+        if (pattern.rows() != cells.length || pattern.columns() != cells[0].length) {
+            throw new IllegalArgumentException("Pattern dimensions must match this canvas.");
+        }
+
+        for (int row = 0; row < cells.length; row++) {
+            for (int column = 0; column < cells[row].length; column++) {
+                cells[row][column] = Color.decode(pattern.colors()[row][column]);
+            }
+        }
+
+        repaint();
     }
 
     private void fill(Color color) {
@@ -139,5 +167,9 @@ class EmbroideryCanvas extends JPanel {
 
         g.dispose();
         return image;
+    }
+
+    private String toHex(Color color) {
+        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
     }
 }
