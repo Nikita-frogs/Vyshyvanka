@@ -3,10 +3,11 @@ package ui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -34,6 +35,30 @@ public class Main {
             button.addActionListener(event -> canvas.setSelectedColor(color));
             palette.add(button);
         }
+
+        JButton exportPngButton = new JButton("Export PNG");
+        exportPngButton.addActionListener(event -> {
+            JFileChooser chooser = new JFileChooser();
+
+            if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
+                File file = chooser.getSelectedFile();
+
+                try {
+                    BufferedImage image = canvas.toImage(false);
+                    ImageIO.write(image, "png", file);
+                } catch (IOException exception) {
+                    JOptionPane.showMessageDialog(frame, "Could not export PNG.");
+                }
+            }
+        });
+
+        JButton importPngButton = new JButton("Import JSON");
+        exportPngButton.addActionListener(event -> {
+
+        });
+
+        palette.add(exportPngButton);
+        palette.add(importPngButton);
 
         JButton mirrorXButton = new JButton("Mirror X");
         mirrorXButton.addActionListener(event -> canvas.mirrorX());

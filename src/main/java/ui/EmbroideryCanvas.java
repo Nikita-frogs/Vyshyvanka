@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 
 class EmbroideryCanvas extends JPanel {
     final Color[][] cells;
@@ -112,5 +113,31 @@ class EmbroideryCanvas extends JPanel {
                 graphics.drawRect(x, y, cellSize, cellSize);
             }
         }
+    }
+
+    BufferedImage toImage(boolean includeGrid) {
+        int width = cells[0].length * cellSize;
+        int height = cells.length * cellSize;
+
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+
+        for (int row = 0; row < cells.length; row++) {
+            for (int column = 0; column < cells[row].length; column++) {
+                int x = column * cellSize;
+                int y = row * cellSize;
+
+                g.setColor(cells[row][column]);
+                g.fillRect(x, y, cellSize, cellSize);
+
+                if (includeGrid) {
+                    g.setColor(Color.LIGHT_GRAY);
+                    g.drawRect(x, y, cellSize, cellSize);
+                }
+            }
+        }
+
+        g.dispose();
+        return image;
     }
 }
