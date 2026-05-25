@@ -9,6 +9,8 @@ class EmbroideryCanvas extends JPanel {
     final Color[][] cells;
     final int cellSize;
     private Color selectedColor = new Color(190, 30, 45);
+    private boolean mirrorXEnabled;
+    private boolean mirrorYEnabled;
 
     EmbroideryCanvas(int columns, int rows, int cellSize) {
         this.cells = new Color[rows][columns];
@@ -48,18 +50,51 @@ class EmbroideryCanvas extends JPanel {
         int column = event.getX() / cellSize;
         int row = event.getY() / cellSize;
 
-        if (row >= 0 && row < cells.length && column >= 0 && column < cells[row].length) {
-            cells[row][column] = selectedColor;
+        if (isInside(row, column)) {
+            paintCellAt(row, column);
+
+            if (mirrorXEnabled) {
+                paintCellAt(mirrorIndex(row, cells.length), column);
+            }
+
+            if (mirrorYEnabled) {
+                paintCellAt(row, mirrorIndex(column, cells[row].length));
+            }
+
+            if (mirrorXEnabled && mirrorYEnabled) {
+                paintCellAt(mirrorIndex(row, cells.length), mirrorIndex(column, cells[row].length));
+            }
+
             repaint();
         }
     }
 
     protected void mirrorX() {
-
+        mirrorXEnabled = true;
     }
 
     protected void mirrorY() {
+        mirrorYEnabled = true;
+    }
 
+    protected void mirrorXY() {
+        mirrorXEnabled = true;
+        mirrorYEnabled = true;
+    }
+
+    private void paintCellAt(int row, int column) {
+        if (isInside(row, column)) {
+            cells[row][column] = selectedColor;
+        }
+    }
+
+    private boolean isInside(int row, int column) {
+        return row >= 0 && row < cells.length && column >= 0 && column < cells[row].length;
+    }
+
+    private int mirrorIndex(int index, int size) {
+        int axis = (size + 1) / 2;
+        return 2 * axis - index;
     }
 
     @Override

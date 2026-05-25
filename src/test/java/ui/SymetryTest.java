@@ -6,18 +6,16 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static ui.Main.canvas;
-import static ui.Main.createWindow;
 
 public class SymetryTest {
-    public static EmbroideryCanvas canvas = new EmbroideryCanvas(31, 31, 28);
-    public static MouseEvent e1;
-    public static int row;
-    public static int column;
+    public EmbroideryCanvas canvas;
+    public MouseEvent e1;
+    public int row;
+    public int column;
 
-    @BeforeAll
-    public static void setUp(){
-        createWindow();
+    @BeforeEach
+    public void setUp() {
+        canvas = new EmbroideryCanvas(31, 31, 28);
         canvas.setSelectedColor(Color.BLACK);
         e1 = new MouseEvent(canvas, MouseEvent.MOUSE_CLICKED, System.currentTimeMillis(), 0, 794, 450, 1, false, MouseEvent.BUTTON1);
         column = e1.getX() / canvas.cellSize;
@@ -36,5 +34,12 @@ public class SymetryTest {
         canvas.mirrorX();
         canvas.paintCell(e1);
         assertEquals(canvas.cells[row][column], canvas.cells[2 * 16 - row][column]);
+    }
+
+    @Test
+    public void testXYSymetry() {
+        canvas.mirrorXY();
+        canvas.paintCell(e1);
+        assertEquals(canvas.cells[row][column], canvas.cells[2 * 16 - row][2 * 16 - column]);
     }
 }
