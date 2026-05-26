@@ -14,7 +14,7 @@ final class TextEmbroideryGenerator {
             " \u0410\u0411\u0412\u0413\u0490\u0414\u0415\u0404\u0416\u0417\u0418\u0406\u0407\u0419\u041A\u041B\u041C\u041D\u041E\u041F\u0420\u0421\u0422\u0423\u0424\u0425\u0426\u0427\u0428\u0429\u042C\u042E\u042F";
     private static final int MOTIF_SIZE = 5;
     private static final int FLOWER_SIZE = 9;
-    private static final int STEP = 5;
+    private static final int STEP = 10;
     private static final int WORD_GAP = 10;
     private static final int PADDING = 8;
     private static final int MIN_GENERATED_SIZE = 35;
@@ -81,8 +81,8 @@ final class TextEmbroideryGenerator {
 
             if (!flower) {
                 Offset offset = offsetFor(sequence, variant);
-                row += offset.row;
-                column += offset.column;
+                row += flowerCenter() + offset.row - MOTIF_SIZE / 2;
+                column += flowerCenter() + offset.column - MOTIF_SIZE / 2;
             }
 
             Color color = motifs.size() % 2 == 0 ? RED : BLACK;
@@ -94,31 +94,43 @@ final class TextEmbroideryGenerator {
     }
 
     private static Offset offsetFor(int sequence, LayoutVariant variant) {
-        int layer = (sequence + 1) / 2;
-        boolean diagonalTurn = variant.startsWithDiagonal() == (sequence % 2 == 1);
-        int ring = ((layer - 1) / 4) + 1;
-        int direction = (layer - 1) % 4;
+        int index = sequence - 1;
+        int ring = index / 8 + 1;
+        int direction = index % 8;
         int distance = ring * STEP;
+        int[][] offsets = variant.startsWithDiagonal() ? diagonalFirstOffsets(distance) : verticalFirstOffsets(distance);
+        int[] offset = offsets[direction];
+        return new Offset(offset[0] * variant.diagonalDirection(), offset[1]);
+    }
 
-        if (diagonalTurn) {
-            int[][] diagonalOffsets = {
-                    {-distance, distance},
-                    {distance, distance},
-                    {distance, -distance},
-                    {-distance, -distance}
-            };
-            int[] offset = diagonalOffsets[direction];
-            return new Offset(offset[0] * variant.diagonalDirection(), offset[1]);
-        }
-
-        int[][] verticalOffsets = {
+    private static int[][] diagonalFirstOffsets(int distance) {
+        return new int[][]{
+                {-distance, distance},
                 {-distance, 0},
+                {distance, distance},
                 {0, distance},
+                {distance, -distance},
                 {distance, 0},
+                {-distance, -distance},
                 {0, -distance}
         };
-        int[] offset = verticalOffsets[direction];
-        return new Offset(offset[0], offset[1]);
+    }
+
+    private static int[][] verticalFirstOffsets(int distance) {
+        return new int[][]{
+                {-distance, 0},
+                {-distance, distance},
+                {0, distance},
+                {distance, distance},
+                {distance, 0},
+                {distance, -distance},
+                {0, -distance},
+                {-distance, -distance}
+        };
+    }
+
+    private static int flowerCenter() {
+        return FLOWER_SIZE / 2;
     }
 
     private static boolean isSupported(char letter) {
