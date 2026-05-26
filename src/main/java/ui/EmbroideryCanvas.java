@@ -49,6 +49,17 @@ class EmbroideryCanvas extends JPanel {
         return cellSize;
     }
 
+    void setCellSize(int cellSize) {
+        if (cellSize <= 0) {
+            throw new IllegalArgumentException("Cell size must be positive.");
+        }
+
+        this.cellSize = cellSize;
+        setPreferredSize(new Dimension(getColumns() * cellSize, getRows() * cellSize));
+        revalidate();
+        repaint();
+    }
+
     void resizeGrid(int columns, int rows, int cellSize) {
         if (columns <= 0 || rows <= 0 || cellSize <= 0) {
             throw new IllegalArgumentException("Grid dimensions and cell size must be positive.");
@@ -70,6 +81,33 @@ class EmbroideryCanvas extends JPanel {
         setPreferredSize(new Dimension(columns * cellSize, rows * cellSize));
         revalidate();
         repaint();
+    }
+
+    void replaceCells(Color[][] replacementCells) {
+        if (replacementCells == null || replacementCells.length == 0 || replacementCells[0].length == 0) {
+            throw new IllegalArgumentException("Replacement cells must not be empty.");
+        }
+
+        int columns = replacementCells[0].length;
+        Color[][] copiedCells = new Color[replacementCells.length][columns];
+        for (int row = 0; row < replacementCells.length; row++) {
+            if (replacementCells[row] == null || replacementCells[row].length != columns) {
+                throw new IllegalArgumentException("Replacement rows must have the same width.");
+            }
+            for (int column = 0; column < columns; column++) {
+                copiedCells[row][column] = replacementCells[row][column] == null ? Color.WHITE : replacementCells[row][column];
+            }
+        }
+
+        cells = copiedCells;
+        setPreferredSize(new Dimension(columns * cellSize, copiedCells.length * cellSize));
+        revalidate();
+        repaint();
+    }
+
+    void replaceCells(Color[][] replacementCells, int cellSize) {
+        replaceCells(replacementCells);
+        setCellSize(cellSize);
     }
 
     void setSelectedColor(Color selectedColor) {

@@ -6,18 +6,25 @@ import serialization.PatternSerializer;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Insets;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 public class Main {
     private static final PatternSerializer patternSerializer = new PatternSerializer();
+    private static final int MIN_GENERATED_CELL_SIZE = 6;
+    private static final int MAX_GENERATED_CELL_SIZE = 18;
     private static JSpinner columnsSpinner;
     private static JSpinner rowsSpinner;
     private static JSpinner cellSizeSpinner;
+    private static JTextField textPatternField;
+    private static JComboBox<TextEmbroideryGenerator.LayoutVariant> patternVariantBox;
     private static boolean updatingGridControls;
 
     public static void main(String[] args) {
@@ -81,6 +88,34 @@ public class Main {
         JButton mirrorXYButton = new JButton("Mirror XY");
         mirrorXYButton.addActionListener(event -> canvas.mirrorXY());
         palette.add(mirrorXYButton);
+
+        textPatternField = new JTextField(16);
+        textPatternField.addActionListener(event -> stitchTextPattern());
+        textPatternField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent event) {
+                stitchTextPattern();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent event) {
+                stitchTextPattern();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent event) {
+                stitchTextPattern();
+            }
+        });
+        palette.add(textPatternField);
+
+        patternVariantBox = new JComboBox<>(TextEmbroideryGenerator.LayoutVariant.values());
+        patternVariantBox.addActionListener(event -> stitchTextPattern());
+        palette.add(patternVariantBox);
+
+        JButton stitchTextButton = new JButton("Stitch text");
+        stitchTextButton.addActionListener(event -> stitchTextPattern());
+        palette.add(stitchTextButton);
 
         frame.setLayout(new BorderLayout());
         frame.add(palette, BorderLayout.NORTH);
@@ -171,6 +206,28 @@ public class Main {
                 JOptionPane.showMessageDialog(frame, "Could not import JSON.");
             }
         }
+    }
+
+    private static void stitchTextPattern() {
+        TextEmbroideryGenerator.LayoutVariant variant =
+                (TextEmbroideryGenerator.LayoutVariant) patternVariantBox.getSelectedItem();
+        TextEmbroideryGenerator.GeneratedPattern pattern =
+                TextEmbroideryGenerator.generate(textPatternField.getText(), variant);
+
+        canvas.replaceCells(pattern.cells(), fittedCellSize(pattern));
+        updateGridControls();
+        frame.pack();
+    }
+
+    private static int fittedCellSize(TextEmbroideryGenerator.GeneratedPattern pattern) {
+        Dimension available = frame.getContentPane().getSize();
+        Insets insets = frame.getInsets();
+        int toolbarHeight = frame.getJMenuBar() == null ? 0 : frame.getJMenuBar().getHeight();
+        int availableWidth = Math.max(360, available.width - insets.left - insets.right - 20);
+        int availableHeight = Math.max(360, available.height - toolbarHeight - insets.top - insets.bottom - 90);
+        int cellSize = Math.min(availableWidth / pattern.columns(), availableHeight / pattern.rows());
+
+        return Math.max(MIN_GENERATED_CELL_SIZE, Math.min(MAX_GENERATED_CELL_SIZE, cellSize));
     }
 
     private static void replaceCanvas(EmbroideryPattern pattern) {
