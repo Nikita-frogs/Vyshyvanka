@@ -103,6 +103,7 @@ public class Main {
             @Override public void removeUpdate(DocumentEvent e) { handleTextInput(); }
             @Override public void changedUpdate(DocumentEvent e) { handleTextInput(); }
         });
+        textPatternField.setText("Микита");
         palette.add(textPatternField);
 
         patternVariantBox = new JComboBox<>(TextEmbroideryGenerator.LayoutVariant.values());
