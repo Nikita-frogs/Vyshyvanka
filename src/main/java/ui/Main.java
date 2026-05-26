@@ -142,6 +142,9 @@ public class Main {
         exportPngItem.addActionListener(event -> exportPng());
         fileMenu.add(exportPngItem);
 
+        JMenu nameMenu = new JMenu("Riznyk Nikita");
+
+        menuBar.add(nameMenu);
         menuBar.add(fileMenu);
         return menuBar;
     }
