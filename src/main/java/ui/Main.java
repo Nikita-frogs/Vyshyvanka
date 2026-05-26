@@ -27,6 +27,12 @@ public class Main {
     private static JComboBox<TextEmbroideryGenerator.LayoutVariant> patternVariantBox;
     private static boolean updatingGridControls;
 
+    /**
+     * When the text field exactly matches a known name from the library, this flag
+     * is set so we don't also run the generative text algorithm on top of it.
+     */
+    private static boolean namedPatternLoaded = false;
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(Main::createWindow);
     }
@@ -90,31 +96,21 @@ public class Main {
         palette.add(mirrorXYButton);
 
         textPatternField = new JTextField(16);
-        textPatternField.addActionListener(event -> stitchTextPattern());
+        textPatternField.setToolTipText("Type a Ukrainian name (e.g. АННА or ANNA) to load its embroidery pattern");
+        textPatternField.addActionListener(event -> handleTextInput());
         textPatternField.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent event) {
-                stitchTextPattern();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent event) {
-                stitchTextPattern();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent event) {
-                stitchTextPattern();
-            }
+            @Override public void insertUpdate(DocumentEvent e) { handleTextInput(); }
+            @Override public void removeUpdate(DocumentEvent e) { handleTextInput(); }
+            @Override public void changedUpdate(DocumentEvent e) { handleTextInput(); }
         });
         palette.add(textPatternField);
 
         patternVariantBox = new JComboBox<>(TextEmbroideryGenerator.LayoutVariant.values());
-        patternVariantBox.addActionListener(event -> stitchTextPattern());
+        patternVariantBox.addActionListener(event -> handleTextInput());
         palette.add(patternVariantBox);
 
         JButton stitchTextButton = new JButton("Stitch text");
-        stitchTextButton.addActionListener(event -> stitchTextPattern());
+        stitchTextButton.addActionListener(event -> handleTextInput());
         palette.add(stitchTextButton);
 
         frame.setLayout(new BorderLayout());
@@ -125,6 +121,51 @@ public class Main {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }
+
+    // -----------------------------------------------------------------------
+    // Text input handling
+    // -----------------------------------------------------------------------
+
+    /**
+     * Called on every keystroke in the text field.
+     * <ol>
+     *   <li>If the text exactly matches a name in {@link NamePatternLibrary},
+     *       load that pre-generated JSON pattern.</li>
+     *   <li>Otherwise fall back to the generative {@link TextEmbroideryGenerator}
+     *       exactly as before.</li>
+     * </ol>
+     */
+    private static void handleTextInput() {
+        String text = textPatternField.getText();
+
+        EmbroideryPattern named = NamePatternLibrary.findPattern(text);
+        if (named != null) {
+            namedPatternLoaded = true;
+            replaceCanvas(named);
+            // Tint the field green to signal a library match
+            textPatternField.setBackground(new Color(200, 255, 200));
+        } else {
+            namedPatternLoaded = false;
+            textPatternField.setBackground(Color.WHITE);
+            stitchTextPattern();
+        }
+    }
+
+    /** Generative path — unchanged from original. */
+    private static void stitchTextPattern() {
+        TextEmbroideryGenerator.LayoutVariant variant =
+                (TextEmbroideryGenerator.LayoutVariant) patternVariantBox.getSelectedItem();
+        TextEmbroideryGenerator.GeneratedPattern pattern =
+                TextEmbroideryGenerator.generate(textPatternField.getText(), variant);
+
+        canvas.replaceCells(pattern.cells(), fittedCellSize(pattern));
+        updateGridControls();
+        frame.pack();
+    }
+
+    // -----------------------------------------------------------------------
+    // Menu bar
+    // -----------------------------------------------------------------------
 
     private static JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
@@ -149,10 +190,13 @@ public class Main {
         return menuBar;
     }
 
+    // -----------------------------------------------------------------------
+    // Grid helpers
+    // -----------------------------------------------------------------------
+
     private static JSpinner createGridSpinner(int value, int minimum, int maximum) {
         JSpinner spinner = new JSpinner(new SpinnerNumberModel(value, minimum, maximum, 1));
         spinner.setPreferredSize(new Dimension(64, 28));
-
         ChangeListener listener = event -> applyGridSettings();
         spinner.addChangeListener(listener);
         return spinner;
@@ -171,12 +215,14 @@ public class Main {
         frame.pack();
     }
 
+    // -----------------------------------------------------------------------
+    // File I/O
+    // -----------------------------------------------------------------------
+
     private static void exportPng() {
         JFileChooser chooser = new JFileChooser();
-
         if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
             File file = chooser.getSelectedFile();
-
             try {
                 BufferedImage image = canvas.toImage(false);
                 ImageIO.write(image, "png", file);
@@ -188,7 +234,6 @@ public class Main {
 
     private static void exportJson() {
         JFileChooser chooser = new JFileChooser();
-
         if (chooser.showSaveDialog(frame) == JFileChooser.APPROVE_OPTION) {
             try {
                 patternSerializer.save(canvas.toPattern(), chooser.getSelectedFile().toPath());
@@ -200,7 +245,6 @@ public class Main {
 
     private static void importJson() {
         JFileChooser chooser = new JFileChooser();
-
         if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
             try {
                 EmbroideryPattern pattern = patternSerializer.load(chooser.getSelectedFile().toPath());
@@ -211,25 +255,17 @@ public class Main {
         }
     }
 
-    private static void stitchTextPattern() {
-        TextEmbroideryGenerator.LayoutVariant variant =
-                (TextEmbroideryGenerator.LayoutVariant) patternVariantBox.getSelectedItem();
-        TextEmbroideryGenerator.GeneratedPattern pattern =
-                TextEmbroideryGenerator.generate(textPatternField.getText(), variant);
-
-        canvas.replaceCells(pattern.cells(), fittedCellSize(pattern));
-        updateGridControls();
-        frame.pack();
-    }
+    // -----------------------------------------------------------------------
+    // Canvas helpers
+    // -----------------------------------------------------------------------
 
     private static int fittedCellSize(TextEmbroideryGenerator.GeneratedPattern pattern) {
         Dimension available = frame.getContentPane().getSize();
         Insets insets = frame.getInsets();
         int toolbarHeight = frame.getJMenuBar() == null ? 0 : frame.getJMenuBar().getHeight();
-        int availableWidth = Math.max(360, available.width - insets.left - insets.right - 20);
-        int availableHeight = Math.max(360, available.height - toolbarHeight - insets.top - insets.bottom - 90);
+        int availableWidth  = Math.max(360, available.width  - insets.left - insets.right  - 20);
+        int availableHeight = Math.max(360, available.height - toolbarHeight - insets.top  - insets.bottom - 90);
         int cellSize = Math.min(availableWidth / pattern.columns(), availableHeight / pattern.rows());
-
         return Math.max(MIN_GENERATED_CELL_SIZE, Math.min(MAX_GENERATED_CELL_SIZE, cellSize));
     }
 
@@ -244,7 +280,6 @@ public class Main {
         if (columnsSpinner == null || rowsSpinner == null || cellSizeSpinner == null) {
             return;
         }
-
         updatingGridControls = true;
         columnsSpinner.setValue(canvas.getColumns());
         rowsSpinner.setValue(canvas.getRows());
