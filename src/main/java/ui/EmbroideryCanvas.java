@@ -9,8 +9,8 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 
 class EmbroideryCanvas extends JPanel {
-    final Color[][] cells;
-    final int cellSize;
+    Color[][] cells;
+    int cellSize;
     private Color selectedColor = new Color(190, 30, 45);
     private boolean mirrorXEnabled;
     private boolean mirrorYEnabled;
@@ -35,6 +35,41 @@ class EmbroideryCanvas extends JPanel {
 
         addMouseListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
+    }
+
+    int getColumns() {
+        return cells[0].length;
+    }
+
+    int getRows() {
+        return cells.length;
+    }
+
+    int getCellSize() {
+        return cellSize;
+    }
+
+    void resizeGrid(int columns, int rows, int cellSize) {
+        if (columns <= 0 || rows <= 0 || cellSize <= 0) {
+            throw new IllegalArgumentException("Grid dimensions and cell size must be positive.");
+        }
+
+        Color[][] resizedCells = new Color[rows][columns];
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
+                if (row < cells.length && column < cells[0].length) {
+                    resizedCells[row][column] = cells[row][column];
+                } else {
+                    resizedCells[row][column] = Color.WHITE;
+                }
+            }
+        }
+
+        this.cells = resizedCells;
+        this.cellSize = cellSize;
+        setPreferredSize(new Dimension(columns * cellSize, rows * cellSize));
+        revalidate();
+        repaint();
     }
 
     void setSelectedColor(Color selectedColor) {
